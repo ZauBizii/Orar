@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Orar ET33 – Semestrul II</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f14;
+    --surface: #161923;
+    --border: #252a35;
+    --accent: #e8ff47;
+    --text: #e8eaf0;
+    --muted: #5a6070;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    padding: 40px 24px;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 20% -10%, #e8ff4708 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 110%, #47c4ff08 0%, transparent 60%);
+  }
+  header { margin-bottom: 40px; }
+  .eyebrow { font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: 0.2em; color: var(--muted); text-transform: uppercase; margin-bottom: 6px; }
+  h1 { font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 800; line-height: 1; letter-spacing: -0.02em; margin-bottom: 6px; }
+  h1 span { color: var(--accent); }
+  .subtitle { font-family: 'Space Mono', monospace; font-size: 12px; color: var(--muted); }
+  .week-tabs { display: flex; gap: 8px; margin-bottom: 24px; }
+  .week-tab { padding: 8px 20px; border-radius: 8px; font-size: 12px; font-family: 'Space Mono', monospace; cursor: pointer; border: 1px solid var(--border); background: transparent; color: var(--muted); transition: all 0.2s; letter-spacing: 0.05em; }
+  .week-tab.active { background: var(--accent); color: #0d0f14; border-color: var(--accent); font-weight: 700; }
+  .legend { display: flex; gap: 20px; margin-bottom: 28px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 12px; font-family: 'Space Mono', monospace; color: var(--muted); }
+  .legend-dot { width: 10px; height: 10px; border-radius: 2px; }
+
+  /* schedule show/hide */
+  .schedule { display: none; }
+  .schedule.active { display: block; }
+
+  /* TABLE (desktop) */
+  .table-wrapper { overflow-x: auto; border-radius: 16px; border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; min-width: 900px; }
+  thead th { padding: 14px 16px; text-align: left; font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); background: var(--surface); border-bottom: 1px solid var(--border); white-space: nowrap; }
+  thead th:first-child { color: var(--muted); width: 90px; }
+  tbody td { padding: 10px 12px; background: var(--bg); vertical-align: top; min-width: 150px; border-bottom: 1px solid var(--border); }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody td:first-child { background: var(--surface); font-family: 'Space Mono', monospace; font-size: 11px; color: var(--accent); font-weight: 700; letter-spacing: 0.05em; white-space: nowrap; padding: 10px 16px; vertical-align: middle; border-right: 1px solid var(--border); }
+  tbody tr:hover td { background: #ffffff04; }
+  tbody tr:hover td:first-child { background: var(--surface); }
+  .cell-empty { color: var(--muted); font-size: 18px; opacity: 0.12; user-select: none; display: flex; align-items: center; justify-content: center; min-height: 44px; }
+
+  /* EVENTS */
+  .event { border-radius: 8px; padding: 9px 11px; border-left: 3px solid; display: flex; flex-direction: column; gap: 3px; }
+  .event.curs { background: #47c4ff15; border-color: #47c4ff; }
+  .event.sem  { background: #e8ff4715; border-color: #e8ff47; }
+  .event.lab  { background: #ff6b6b15; border-color: #ff6b6b; }
+  .event.pr   { background: #b47fff15; border-color: #b47fff; }
+  .event.lan  { background: #ff9f4715; border-color: #ff9f47; }
+  .event-type { font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.65; }
+  .event.curs .event-type { color: #47c4ff; }
+  .event.sem  .event-type { color: #e8ff47; }
+  .event.lab  .event-type { color: #ff6b6b; }
+  .event.pr   .event-type { color: #b47fff; }
+  .event.lan  .event-type { color: #ff9f47; }
+  .event-name { font-weight: 700; font-size: 13px; line-height: 1.2; }
+  .event-prof { font-size: 10px; opacity: 0.5; font-family: 'Space Mono', monospace; }
+  .event-room { font-size: 9px; font-family: 'Space Mono', monospace; opacity: 0.35; margin-top: 1px; }
+
+  /* MOBILE CARDS */
+  .day-cards { display: none; flex-direction: column; gap: 16px; }
+  .day-card { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .day-header { background: var(--surface); padding: 10px 16px; font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--accent); border-bottom: 1px solid var(--border); }
+  .day-body { display: flex; flex-direction: column; }
+  .day-row { display: flex; align-items: stretch; border-bottom: 1px solid var(--border); }
+  .day-row:last-child { border-bottom: none; }
+  .day-row-time { background: var(--surface); font-family: 'Space Mono', monospace; font-size: 9px; color: var(--muted); padding: 10px; min-width: 82px; display: flex; align-items: center; border-right: 1px solid var(--border); line-height: 1.4; }
+  .day-row-content { flex: 1; padding: 8px 10px; }
+  .day-free { padding: 14px 16px; font-family: 'Space Mono', monospace; font-size: 11px; color: var(--muted); opacity: 0.5; text-align: center; }
+
+  @media (max-width: 640px) {
+    body { padding: 24px 16px; }
+    h1 { font-size: 2.2rem; }
+    .week-tabs { width: 100%; }
+    .week-tab { flex: 1; text-align: center; padding: 10px 8px; font-size: 11px; }
+    .legend { gap: 12px; }
+    .table-wrapper { display: none; }
+    .day-cards { display: flex; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">Universitate · Semestrul II</div>
+  <h1>Orar <span>ET33</span></h1>
+  <div class="subtitle">// Inginerie Electrică și Telecomunicații</div>
+</header>
+
+<div class="week-tabs">
+  <button class="week-tab active" onclick="showWeek(1,this)">Săptămâna I</button>
+  <button class="week-tab" onclick="showWeek(2,this)">Săptămâna II</button>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#47c4ff"></div> Curs</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#e8ff47"></div> Seminar</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#ff6b6b"></div> Laborator</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#b47fff"></div> Proiect</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#ff9f47"></div> Lucrare</div>
+</div>
+
+<!-- ═══════════════ SĂPTĂMÂNA I ═══════════════ -->
+<div class="schedule active" id="week1">
+
+  <!-- Desktop table -->
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr><th>Zi</th><th>08:00–09:40</th><th>09:50–11:30</th><th>11:40–13:20</th><th>13:30–15:10</th><th>15:20–17:00</th><th>17:10–18:50</th><th>19:00–20:40</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Luni</td>
+          <td><div class="cell-empty">—</div></td>
+          <td><div class="cell-empty">—</div></td>
+          <td><div class="event curs"><div class="event-type">Curs</div><div class="event-name">EE</div><div class="event-prof">HNATIUC B.</div><div class="event-room">BN A03</div></div></td>
+          <td><div class="event curs"><div class="event-type">Curs</div><div class="event-name">MET</div><div class="event-prof">DUMITRAȘCU A.</div><div class="event-room">BN A203</div></div></td>
+          <td><div class="cell-empty">—</div></td>
+          <td><div class="cell-empty">—</div></td>
+          <td><div class="cell-empty">—</div></td>
+        </tr>
+        <tr>
+          <td>Marți</td>
+          <td><div class="event lab"><div class="event-type">Laborator</div><div class="event-name">MCI</div><div class="event-prof">ȚICU I.</div><div class="event-room">BN B103</div></div></td>
+          <td><div class="event lab"><div class="event-type">Laborator</div><div class="event-name">ME 2</div><div class="event-prof">NEDELCU E.</div><div class="event-room">BN A02</div></div></td>
+          <td><div class="event lab"><div class="event-type">Laborator</div><div class="event-name">AE</div><div class="event-prof">HNATIUC B.</div><div class="event-room">BN B101</div></div></td>
+          <td><div class="cell-empty">—</div></td>
+          <td><div class="cell-empty">—</div></td>
+          <td><div class="cell-empty">—</div></td>
+          <td><div class="cell-empty">—</div></td>
+        </tr>
+        <tr>
+          <td>Miercuri</td>
+          <td><div class="event curs"><div class="event-type">Curs</div><div class="event-name">SR</div><div class="event-prof">OMOCEA I.</div><div class="event-room">BN A203</div></div></td>
+          <td><div class="event curs"><div class="event-type">Curs</div><div class="event-name">SR</div><div class="event-prof">OMOCEA I.</div><div class="event-room">BN A203</div></div></td>
+          <td><div class="event curs"><div class="event-type">Curs</div><div class="event-name">ME 2</div><div class="event-prof">CIUCUR V.</div><div class="event-room">BN A203</div></div></td>
+          <td><div class="event curs"><div class="event-type">Curs</div><div class="event-name">TIAD</div><div class="event-prof">DUMITRAȘCU A.</div><div class="event-room">BN A203</div></div></td>
+          <td><div class="cell-empty">—</div></td>
+          <td><div class="cell-empty">—</div></td>
+          <td><div class="cell-empty">—</div></td>
+        </tr>
+        <tr>
+          <td>Joi</td>
+          <td><div class="cell-empty">—</div></td>
+          <td><div class="cell-empty">—</div></td>
+          <td><div class="cell-empty">—</div></td>
+          <td><div class="event lan"><div class="event-type">Lucrare</div><div class="event-name">TIAD</div><div class="event-prof">DUMITRAȘCU A.</div><div class="event-room">E207</div></div></td>
+          <td><div class="event sem"><div class="event-type">Seminar</div><div class="event-name">CCLE</div><div class="event-prof">UNGUREANU C.</div><div class="event-room">E209</div></div></td>
+          <td><div class="cell-empty">—</div></td>
+          <td><div class="cell-empty">—</div></td>
+        </tr>
+        <tr>
+          <td>Vineri</td>
+          <td><div class="cell-empty">—</div></td><td><div class="cell-empty">—</div></td><td><div class="cell-empty">—</div></td><td><div class="cell-empty">—</div></td><td><div class="cell-empty">—</div></td><td><div class="cell-empty">—</div></td><td><div class="cell-empty">—</div></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Mobile cards -->
+  <div class="day-cards">
+    <div class="day-card">
+      <div class="day-header">Luni</div>
+      <div class="day-body">
+        <div class="day-row"><div class="day-row-time">11:40–13:20</div><div class="day-row-content"><div class="event curs"><div class="event-type">Curs</div><div class="event-name">EE</div><div class="event-prof">HNATIUC B.</div><div class="event-room">BN A03</div></div></div></div>
+        <div class="day-row"><div class="day-row-time">13:30–15:10</div><div class="day-row-content"><div class="event curs"><div class="event-type">Curs</div><div class="event-name">MET</div><div class="event-prof">DUMITRAȘCU A.</div><div class="event-room">BN A203</div></div></div></div>
+      </div>
+    </div>
+    <div class="day-card">
+      <div class="day-header">Marți</div>
+      <div class="day-body">
+        <div class="day-row"><div class="day-row-time">08:00–09:40</div><div class="day-row-content"><div class="event lab"><div class="event-type">Laborator</div><div class="event-name">MCI</div><div class="event-prof">ȚICU I.</div><div class="event-room">BN B103</div></div></div></div>
+        <div class="day-row"><div class="day-row-time">09:50–11:30</div><div class="day-row-content"><div class="event lab"><div class="event-type">Laborator</div><div class="event-name">ME 2</div><div class="event-prof">NEDELCU E.</div><div class="event-room">BN A02</div></div></div></div>
+        <div class="day-row"><div class="day-row-time">11:40–13:20</div><div class="day-row-content"><div class="event lab"><div class="event-type">Laborator</div><div class="event-name">AE</div><div class="event-prof">HNATIUC B.</div><div class="event-room">BN B101</div></div></div></div>
+      </div>
+    </div>
+    <div class="day-card">
+      <div class="day-header">Miercuri</div>
+      <div class="day-body">
+        <div class="day-row"><div class="day-row-time">08:00–09:40</div><div class="day-row-content"><div class="event curs"><div class="event-type">Curs</div><div class="event-name">SR</div><div class="event-prof">OMOCEA I.</div><div class="event-room">BN A203</div></div></div></div>
+        <div class="day-row"><div class="day-row-time">09:50–11:30</div><div class="day-row-content"><div class="event curs"><div class="event-type">Curs</div><div class="event-name">SR</div><div class="event-prof">OMOCEA I.</div><div class="event-room">BN A203</div></div></div></div>
+        <div class="day-row"><div class="day-row-time">11:40–13:20</div><div class="day-row-content"><div class="event curs"><div class="event-type">Curs</div><div class="event-name">ME 2</div><div class="event-prof">CIUCUR V.</div><div class="event-room">BN A203</div></div></div></div>
+        <div class="day-row"><div class="day-row-time">13:30–15:10</div><div class="day-row-content"><div class="event curs"><div class="event-type">Curs</div><div class="event-name">TIAD</div><div class="event-prof">DUMITRAȘCU A.</div><div class="event-room">BN A203</div></div></div></div>
+      </div>
+    </div>
+    <div class="day-card">
+      <div class="day-header">Joi</div>
+      <div class="day-body">
+        <div class="day-row"><div class="day-row-time">13:30–15:10</div><div class="day-row-content"><div class="event lan"><div class="event-type">Lucrare</div><div class="event-name">TIAD</div><div class="event-prof">DUMITRAȘCU A.</div><div class="event-room">E207</div></div></div></div>
+        <div class="day-row"><div class="day-row-time">15:20–17:00</div><div class="day-row-content"><div class="event sem"><div class="event-type">Seminar</div><div class="event-name">CCLE</div><div class="event-prof">UNGUREANU C.</div><div class="event-room">E209</div></div></div></div>
+      </div>
+    </div>
+    <div class="day-card">
+      <div class="day-header">Vineri</div>
+      <div class="day-body"><div class="day-free">Zi liberă 🎉</div></div>
+    </div>
+  </div>
+
+</div><!-- end week1 -->
+
+<!-- ═══════════════ SĂPTĂMÂNA II ═══════════════ -->
+<div class="schedule" id="week2">
+
+  <!-- Desktop table -->
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr><th>Zi</th><th>08:00–09:40</th><th>09:50–11:30</th><th>11:40–13:20</th><th>13:30–15:10</th><th>15:20–17:00</th><th>17:10–18:50</th><th>19:00–20:40</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Luni</td>
+          <td><div class="cell-empty">—</div></td>
+          <td><div class="event curs"><div class="event-type">Curs</div><div class="event-name">EE</div><div class="event-prof">HNATIUC B.</div><div class="event-room">BN A03</div></div></td>
+          <td><div class="event curs"><div class="event-type">Curs</div><div class="event-name">EE</div><div class="event-prof">HNATIUC B.</div><div class="event-room">BN A03</div></div></td>
+          <td><div class="event curs"><div class="event-type">Curs</div><div class="event-name">MET</div><div class="event-prof">DUMITRAȘCU A.</div><div class="event-room">BN A03</div></div></td>
+          <td><div class="event curs"><div class="event-type">Curs</div><div class="event-name">TIAD</div><div class="event-prof">DUMITRAȘCU A.</div><div class="event-room">BN A03</div></div></td>
+          <td><div class="cell-empty">—</div></td>
+          <td><div class="cell-empty">—</div></td>
+        </tr>
+        <tr>
+          <td>Marți</td>
+          <td><div class="cell-empty">—</div></td>
+          <td><div class="cell-empty">—</div></td>
+          <td><div class="event sem"><div class="event-type">Seminar</div><div class="event-name">CCLE</div><div class="event-prof">UNGUREANU C.</div><div class="event-room">BN A204</div></div></td>
+          <td><div class="event lab"><div class="event-type">Laborator</div><div class="event-name">MEE</div><div class="event-prof">DUMITRAȘCU A.</div><div class="event-room">BN B103</div></div></td>
+          <td><div class="event lab"><div class="event-type">Laborator</div><div class="event-name">SCE</div><div class="event-prof">OMOCEA I.</div><div class="event-room">BN CS01</div></div></td>
+          <td><div class="event sem"><div class="event-type">Seminar</div><div class="event-name">DI</div><div class="event-prof">ADĂSCĂLIȚEI O.</div><div class="event-room">BN C07</div></div></td>
+          <td><div class="cell-empty">—</div></td>
+        </tr>
+        <tr>
+          <td>Miercuri</td>
+          <td><div class="cell-empty">—</div></td>
+          <td><div class="event curs"><div class="event-type">Curs</div><div class="event-name">SR</div><div class="event-prof">OMOCEA I.</div><div class="event-room">BN C10</div></div></td>
+          <td><div class="event curs"><div class="event-type">Curs</div><div class="event-name">ME 2</div><div class="event-prof">CIUCUR V.</div><div class="event-room">BN C10</div></div></td>
+          <td><div class="event curs"><div class="event-type">Curs</div><div class="event-name">ME 2</div><div class="event-prof">CIUCUR V.</div><div class="event-room">BN C10</div></div></td>
+          <td><div class="cell-empty">—</div></td>
+          <td><div class="cell-empty">—</div></td>
+          <td><div class="cell-empty">—</div></td>
+        </tr>
+        <tr>
+          <td>Joi</td>
+          <td><div class="cell-empty">—</div></td>
+          <td><div class="cell-empty">—</div></td>
+          <td><div class="cell-empty">—</div></td>
+          <td><div class="event curs"><div class="event-type">Curs</div><div class="event-name">MCI</div><div class="event-prof">ȚICU I.</div><div class="event-room">BN C10</div></div></td>
+          <td><div class="cell-empty">—</div></td>
+          <td><div class="cell-empty">—</div></td>
+          <td><div class="cell-empty">—</div></td>
+        </tr>
+        <tr>
+          <td>Vineri</td>
+          <td><div class="event lab"><div class="event-type">Laborator</div><div class="event-name">MCI</div><div class="event-prof">ȚICU I.</div><div class="event-room">BN B103</div></div></td>
+          <td><div class="event pr"><div class="event-type">Proiect</div><div class="event-name">ME 2</div><div class="event-prof">NEDELCU E.</div><div class="event-room">BN A02</div></div></td>
+          <td><div class="event sem"><div class="event-type">Seminar</div><div class="event-name">IEA</div><div class="event-prof">ADĂSCĂLIȚEI O.</div><div class="event-room">BN C09</div></div></td>
+          <td><div class="cell-empty">—</div></td>
+          <td><div class="cell-empty">—</div></td>
+          <td><div class="cell-empty">—</div></td>
+          <td><div class="cell-empty">—</div></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Mobile cards -->
+  <div class="day-cards">
+    <div class="day-card">
+      <div class="day-header">Luni</div>
+      <div class="day-body">
+        <div class="day-row"><div class="day-row-time">09:50–11:30</div><div class="day-row-content"><div class="event curs"><div class="event-type">Curs</div><div class="event-name">EE</div><div class="event-prof">HNATIUC B.</div><div class="event-room">BN A03</div></div></div></div>
+        <div class="day-row"><div class="day-row-time">11:40–13:20</div><div class="day-row-content"><div class="event curs"><div class="event-type">Curs</div><div class="event-name">EE</div><div class="event-prof">HNATIUC B.</div><div class="event-room">BN A03</div></div></div></div>
+        <div class="day-row"><div class="day-row-time">13:30–15:10</div><div class="day-row-content"><div class="event curs"><div class="event-type">Curs</div><div class="event-name">MET</div><div class="event-prof">DUMITRAȘCU A.</div><div class="event-room">BN A03</div></div></div></div>
+        <div class="day-row"><div class="day-row-time">15:20–17:00</div><div class="day-row-content"><div class="event curs"><div class="event-type">Curs</div><div class="event-name">TIAD</div><div class="event-prof">DUMITRAȘCU A.</div><div class="event-room">BN A03</div></div></div></div>
+      </div>
+    </div>
+    <div class="day-card">
+      <div class="day-header">Marți</div>
+      <div class="day-body">
+        <div class="day-row"><div class="day-row-time">11:40–13:20</div><div class="day-row-content"><div class="event sem"><div class="event-type">Seminar</div><div class="event-name">CCLE</div><div class="event-prof">UNGUREANU C.</div><div class="event-room">BN A204</div></div></div></div>
+        <div class="day-row"><div class="day-row-time">13:30–15:10</div><div class="day-row-content"><div class="event lab"><div class="event-type">Laborator</div><div class="event-name">MEE</div><div class="event-prof">DUMITRAȘCU A.</div><div class="event-room">BN B103</div></div></div></div>
+        <div class="day-row"><div class="day-row-time">15:20–17:00</div><div class="day-row-content"><div class="event lab"><div class="event-type">Laborator</div><div class="event-name">SCE</div><div class="event-prof">OMOCEA I.</div><div class="event-room">BN CS01</div></div></div></div>
+        <div class="day-row"><div class="day-row-time">17:10–18:50</div><div class="day-row-content"><div class="event sem"><div class="event-type">Seminar</div><div class="event-name">DI</div><div class="event-prof">ADĂSCĂLIȚEI O.</div><div class="event-room">BN C07</div></div></div></div>
+      </div>
+    </div>
+    <div class="day-card">
+      <div class="day-header">Miercuri</div>
+      <div class="day-body">
+        <div class="day-row"><div class="day-row-time">09:50–11:30</div><div class="day-row-content"><div class="event curs"><div class="event-type">Curs</div><div class="event-name">SR</div><div class="event-prof">OMOCEA I.</div><div class="event-room">BN C10</div></div></div></div>
+        <div class="day-row"><div class="day-row-time">11:40–13:20</div><div class="day-row-content"><div class="event curs"><div class="event-type">Curs</div><div class="event-name">ME 2</div><div class="event-prof">CIUCUR V.</div><div class="event-room">BN C10</div></div></div></div>
+        <div class="day-row"><div class="day-row-time">13:30–15:10</div><div class="day-row-content"><div class="event curs"><div class="event-type">Curs</div><div class="event-name">ME 2</div><div class="event-prof">CIUCUR V.</div><div class="event-room">BN C10</div></div></div></div>
+      </div>
+    </div>
+    <div class="day-card">
+      <div class="day-header">Joi</div>
+      <div class="day-body">
+        <div class="day-row"><div class="day-row-time">13:30–15:10</div><div class="day-row-content"><div class="event curs"><div class="event-type">Curs</div><div class="event-name">MCI</div><div class="event-prof">ȚICU I.</div><div class="event-room">BN C10</div></div></div></div>
+      </div>
+    </div>
+    <div class="day-card">
+      <div class="day-header">Vineri</div>
+      <div class="day-body">
+        <div class="day-row"><div class="day-row-time">08:00–09:40</div><div class="day-row-content"><div class="event lab"><div class="event-type">Laborator</div><div class="event-name">MCI</div><div class="event-prof">ȚICU I.</div><div class="event-room">BN B103</div></div></div></div>
+        <div class="day-row"><div class="day-row-time">09:50–11:30</div><div class="day-row-content"><div class="event pr"><div class="event-type">Proiect</div><div class="event-name">ME 2</div><div class="event-prof">NEDELCU E.</div><div class="event-room">BN A02</div></div></div></div>
+        <div class="day-row"><div class="day-row-time">11:40–13:20</div><div class="day-row-content"><div class="event sem"><div class="event-type">Seminar</div><div class="event-name">IEA</div><div class="event-prof">ADĂSCĂLIȚEI O.</div><div class="event-room">BN C09</div></div></div></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end week2 -->
+
+<script>
+function showWeek(n, btn) {
+  document.querySelectorAll('.schedule').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.week-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('week' + n).classList.add('active');
+  btn.classList.add('active');
+}
+</script>
+</body>
+</html>
